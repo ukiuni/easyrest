@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -19,7 +18,9 @@ import org.springframework.web.client.RestTemplate;
 import com.ukiuni.easyrest.entity.Todo;
 
 import lombok.val;
+import lombok.extern.java.Log;
 
+@Log
 public class EasyrestApplicationTests {
 	private ConfigurableApplicationContext context;
 	private static final String PORT = SocketUtils.findAvailableTcpPort() + "";
@@ -38,9 +39,20 @@ public class EasyrestApplicationTests {
 
 	@Test
 	public void testIndex() {
-		IntStream.range(0, 100).forEach(this::crud);
-		System.out.println("average :" + costs.parallelStream().mapToLong(c -> c).average());
-		System.out.println("total   :" + costs.parallelStream().mapToLong(c -> c).average());
+		IntStream.range(0, 100).parallel().forEach(this::crud); // for idle
+		costs.clear();
+		long start = System.currentTimeMillis();
+		IntStream.range(0, 1000).parallel().forEach(this::crud);
+		long total = System.currentTimeMillis() - start;
+		log.info("#########################");
+		log.warning("# summary  :" + System.getProperty("java.vendor") + " " + System.getProperty("java.version") + ", total :" + String.format("%7d", total) + ", avr :" + costs.parallelStream().mapToLong(c -> c).average().getAsDouble());
+		log.info("# vender  :" + System.getProperty("java.vendor"));
+		log.info("# version :" + System.getProperty("java.version"));
+		log.info("# total   :" + total);
+		log.info("# average :" + costs.parallelStream().mapToLong(c -> c).average().getAsDouble());
+		log.info("# min     :" + costs.parallelStream().mapToLong(c -> c).min());
+		log.info("# max     :" + costs.parallelStream().mapToLong(c -> c).max());
+		log.info("#########################");
 	}
 
 	public List<Long> costs = new ArrayList<>();
